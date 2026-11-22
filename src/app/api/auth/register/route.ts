@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -10,6 +11,9 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  if (!rateLimit(`register:${clientIp(req.headers)}`, 5, 60 * 60_000)) {
+    return NextResponse.json({ error: "Too many sign-ups from this network. Try again later." }, { status: 429 });
+  }
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });

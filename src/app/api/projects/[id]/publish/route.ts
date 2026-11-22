@@ -23,13 +23,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   let subdomain = project.subdomain;
   if (!subdomain) {
-    const base = slugify(project.name).slice(0, 40);
+    const RESERVED = new Set(["www", "api", "app", "admin", "dashboard", "studio", "login", "register", "static", "mail"]);
+    let base = slugify(project.name).slice(0, 40);
+    if (RESERVED.has(base)) base = `${base}-site`;
     subdomain = base;
+    let free = false;
     for (let i = 0; i < 6; i++) {
       const taken = await db.project.findFirst({ where: { subdomain }, select: { id: true } });
-      if (!taken) break;
+      if (!taken) { free = true; break; }
       subdomain = `${base}-${Math.random().toString(36).slice(2, 6)}`;
     }
+    // Guaranteed-unique fallback so publishing never fails on a name clash.
+    if (!free) subdomain = `${base}-${Date.now().toString(36)}`;
   }
   await db.project.update({ where: { id }, data: { status: "PUBLISHED", subdomain } });
   return NextResponse.json({ status: "PUBLISHED", subdomain });

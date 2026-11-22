@@ -22,11 +22,17 @@ export async function POST(req: Request) {
     await assertCanCreateProject(user.id, user.plan);
     await assertAiQuota(user.id, user.plan, "ai_generation");
 
-    const spec = await generateSite(body.data.prompt);
-    const project = await createProjectFromSpec(user.id, spec);
-    await db.usageRecord.create({ data: { userId: user.id, kind: "ai_generation" } });
-
-    return NextResponse.json({ id: project.id }, { status: 201 });
+    // Reserve the quota BEFORE the slow AI call so parallel requests cannot slip past the limit.
+    const usage = await db.usageRecord.create({ data: { userId: user.id, kind: "ai_generation" } });
+    try {
+      const spec = await generateSite(body.data.prompt);
+      const project = await createProjectFromSpec(user.id, spec);
+      return NextResponse.json({ id: project.id }, { status: 201 });
+    } catch (e) {
+      // Failed generations should not use up the user's monthly quota.
+      await db.usageRecord.delete({ where: { id: usage.id } }).catch(() => {});
+      throw e;
+    }
   } catch (e) {
     return handleKnownError(e);
   }

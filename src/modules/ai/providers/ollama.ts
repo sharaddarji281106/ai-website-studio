@@ -12,11 +12,21 @@ export class OllamaProvider implements AIProvider {
     const base = (process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434").replace(/\/$/, "");
     const model = process.env.OLLAMA_MODEL ?? "llama3.1";
 
+    // On a hosted server (e.g. Render), 127.0.0.1 is the server itself, not your computer.
+    if (process.env.NODE_ENV === "production" && /^https?:\/\/(127\.0\.0\.1|localhost|0\.0\.0\.0)(:|\/|$)/i.test(base)) {
+      throw new AIError(
+        "AI_UNAVAILABLE",
+        "AI is not reachable: OLLAMA_BASE_URL points to localhost on the server. Set it to a public Ollama URL (tunnel or GPU server).",
+      );
+    }
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (process.env.OLLAMA_API_KEY) headers.Authorization = `Bearer ${process.env.OLLAMA_API_KEY}`;
+
     let res: Response;
     try {
       res = await fetch(`${base}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           model,
           stream: true,
@@ -27,7 +37,7 @@ export class OllamaProvider implements AIProvider {
           ],
           options: {
             temperature: 0.6,
-            num_ctx: Number(process.env.OLLAMA_NUM_CTX ?? 8192),
+            num_ctx: Number(process.env.OLLAMA_NUM_CTX ?? 16384),
             num_predict: maxTokens,
           },
         }),

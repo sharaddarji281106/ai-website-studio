@@ -41,15 +41,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   try {
     await assertAiQuota(user.id, user.plan, "ai_edit");
-    const result = await proposeEdit({
-      instruction: body.data.instruction,
-      selectedSectionId: body.data.selectedSectionId ?? null,
-      theme: body.data.theme as never,
-      page: body.data.page,
-      otherPages: body.data.otherPages,
-    });
-    await db.usageRecord.create({ data: { userId: user.id, kind: "ai_edit" } });
-    return NextResponse.json(result);
+    const usage = await db.usageRecord.create({ data: { userId: user.id, kind: "ai_edit" } });
+    try {
+      const result = await proposeEdit({
+        instruction: body.data.instruction,
+        selectedSectionId: body.data.selectedSectionId ?? null,
+        theme: body.data.theme as never,
+        page: body.data.page,
+        otherPages: body.data.otherPages,
+      });
+      return NextResponse.json(result);
+    } catch (e) {
+      await db.usageRecord.delete({ where: { id: usage.id } }).catch(() => {});
+      throw e;
+    }
   } catch (e) {
     return handleKnownError(e);
   }

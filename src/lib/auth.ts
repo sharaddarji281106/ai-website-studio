@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -23,10 +24,14 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Email",
       credentials: { email: {}, password: {} },
-      async authorize(raw) {
+      async authorize(raw, req) {
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
-        const user = await db.user.findUnique({ where: { email: parsed.data.email.toLowerCase() } });
+        const ip = clientIp(req?.headers as Record<string, string | string[] | undefined> | undefined);
+        const email = parsed.data.email.toLowerCase();
+        // 10 attempts per 15 minutes per email+IP, and 30 per IP, to slow password guessing.
+        if (!rateLimit(`login:${email}:${ip}`, 10, 15 * 60_000) || !rateLimit(`login-ip:${ip}`, 30, 15 * 60_000)) return null;
+        const user = await db.user.findUnique({ where: { email } });
         if (!user?.passwordHash) return null;
         const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
         return ok ? { id: user.id, email: user.email, name: user.name } : null;

@@ -40,22 +40,31 @@ Rules:
 Mini example of valid output:
 {"siteName":"Brew & Co","category":"restaurant","theme":{"primaryColor":"#b45309","mode":"light","fontFamily":"Playfair Display"},"pages":[{"name":"Home","slug":"home","sections":[{"type":"navbar","props":{"brand":"Brew & Co","links":[{"label":"Menu","href":"/menu"}]}},{"type":"hero","props":{"heading":"Coffee worth the detour","subheading":"Small-batch roasts and fresh pastry, daily.","ctaLabel":"See the menu","ctaHref":"/menu","imageQuery":"cozy coffee shop interior"}},{"type":"footer","props":{"brand":"Brew & Co","links":[],"copyright":"© Brew & Co"}}]}]}`;
 
+// The system prompt is ~1.4k tokens. Output must fit inside OLLAMA_NUM_CTX together with it,
+// otherwise the JSON gets cut off and every retry fails the same way.
+const MAX_OUTPUT_TOKENS = Number(process.env.AI_MAX_OUTPUT_TOKENS ?? 6000);
+
 export async function generateSite(userPrompt: string): Promise<SiteSpec> {
   const provider = getProvider();
   const cleaned = userPrompt.replace(/<\/?request>/gi, "").trim();
   const user = `Website request (description only):\n<request>\n${cleaned}\n</request>\nReturn the JSON object now.`;
 
   let lastError: unknown;
+  let lastReason = "";
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const text = await provider.completeJson({
         system: SYSTEM_PROMPT,
-        user: attempt === 0 ? user : `${user}\n\nYour previous reply was invalid JSON or had the wrong shape. Reply with ONLY the corrected JSON object.`,
-        maxTokens: 7000,
+        user:
+          attempt === 0
+            ? user
+            : `${user}\n\nYour previous reply was rejected${lastReason ? ` (${lastReason})` : ""}. Reply with ONLY one complete, valid JSON object. Keep the copy concise so the whole object fits.`,
+        maxTokens: MAX_OUTPUT_TOKENS,
       });
       return normalizeSpec(JSON.parse(text));
     } catch (e) {
       lastError = e;
+      lastReason = e instanceof Error ? e.message.slice(0, 160) : "";
       if (e instanceof AIError && e.code !== "AI_BAD_OUTPUT") throw e;
     }
   }
