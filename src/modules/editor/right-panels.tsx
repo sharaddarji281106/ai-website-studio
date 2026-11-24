@@ -1,8 +1,8 @@
 "use client";
 import { Check, Loader2, Send, Sparkles, X } from "lucide-react";
 import { useState } from "react";
-import { FONTS, type Theme } from "@/modules/site/schema";
 import { SECTION_DEFAULTS, SECTION_META, withDefaults } from "./defaults";
+import { isLocked } from "@/modules/site/style";
 import { describeOp } from "./ops";
 import { PropsEditor } from "./props-editor";
 import { selectActivePage, useEditor } from "./store";
@@ -29,83 +29,18 @@ export function ContentPanel() {
   return (
     <div className="grid gap-4 p-3">
       <h3 className="panel-title">{meta.label}</h3>
-      <PropsEditor
-        value={merged}
-        defaults={SECTION_DEFAULTS[section.type]}
-        onChange={(props, key) => useEditor.getState().replaceProps(section.id, props, key)}
-      />
-    </div>
-  );
-}
-
-/* ---------------- Style ---------------- */
-function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { v: T; l: string }[]; onChange: (v: T) => void }) {
-  return (
-    <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
-      {options.map((o) => (
-        <button key={o.v} onClick={() => onChange(o.v)} className={`rounded-md px-2 py-1 text-xs font-medium transition ${value === o.v ? "bg-white shadow-sm dark:bg-slate-700" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"}`}>
-          {o.l}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-export function StylePanel() {
-  const theme = useEditor((s) => s.doc.theme);
-  const { updateTheme, replaceProps } = useEditor.getState();
-  const section = useSelectedSection();
-  const st = (section?.props.__style ?? {}) as { pad?: string; align?: string; bg?: string };
-  const hide = (section?.props.__hide ?? {}) as { desktop?: boolean; tablet?: boolean; mobile?: boolean };
-  const setStyle = (patch: Record<string, string>) => section && replaceProps(section.id, { ...section.props, __style: { ...st, ...patch } });
-  const setHide = (k: "desktop" | "tablet" | "mobile", v: boolean) => section && replaceProps(section.id, { ...section.props, __hide: { ...hide, [k]: v } });
-
-  return (
-    <div className="grid gap-6 p-3">
-      <div className="grid gap-3">
-        <h3 className="panel-title">Website theme</h3>
-        <div className="grid gap-1">
-          <span className="field-label">Brand color</span>
-          <div className="flex items-center gap-2">
-            <input type="color" value={theme.primaryColor} onChange={(e) => updateTheme({ primaryColor: e.target.value })} className="h-9 w-12 cursor-pointer rounded-lg border border-slate-200 bg-transparent p-0.5 dark:border-slate-700" />
-            <input className="input" value={theme.primaryColor} maxLength={7} onChange={(e) => /^#[0-9a-fA-F]{6}$/.test(e.target.value) && updateTheme({ primaryColor: e.target.value })} />
-          </div>
-        </div>
-        <div className="grid gap-1">
-          <span className="field-label">Mode</span>
-          <Segmented<Theme["mode"]> value={theme.mode} onChange={(mode) => updateTheme({ mode })} options={[{ v: "light", l: "Light" }, { v: "dark", l: "Dark" }]} />
-        </div>
-        <label className="grid gap-1">
-          <span className="field-label">Font</span>
-          <select className="input" value={theme.fontFamily} onChange={(e) => updateTheme({ fontFamily: e.target.value as Theme["fontFamily"] })}>
-            {FONTS.map((f) => <option key={f}>{f}</option>)}
-          </select>
-        </label>
-      </div>
-
-      {section ? (
-        <div className="grid gap-3 border-t border-slate-200 pt-5 dark:border-slate-800">
-          <h3 className="panel-title">{SECTION_META[section.type].label} section</h3>
-          <div className="grid gap-1"><span className="field-label">Spacing</span>
-            <Segmented value={st.pad ?? "md"} onChange={(pad) => setStyle({ pad })} options={[{ v: "none", l: "None" }, { v: "sm", l: "S" }, { v: "md", l: "M" }, { v: "lg", l: "L" }]} />
-          </div>
-          <div className="grid gap-1"><span className="field-label">Alignment</span>
-            <Segmented value={st.align ?? "default"} onChange={(align) => setStyle({ align })} options={[{ v: "default", l: "Auto" }, { v: "left", l: "Left" }, { v: "center", l: "Center" }]} />
-          </div>
-          <div className="grid gap-1"><span className="field-label">Background</span>
-            <Segmented value={st.bg ?? "default"} onChange={(bg) => setStyle({ bg })} options={[{ v: "default", l: "Default" }, { v: "muted", l: "Muted" }, { v: "primary", l: "Brand" }, { v: "dark", l: "Dark" }]} />
-          </div>
-          <div className="grid gap-1"><span className="field-label">Hide on</span>
-            <div className="flex gap-3 text-sm">
-              {(["desktop", "tablet", "mobile"] as const).map((k) => (
-                <label key={k} className="flex items-center gap-1.5 capitalize"><input type="checkbox" checked={!!hide[k]} onChange={(e) => setHide(k, e.target.checked)} />{k}</label>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <p className="border-t border-slate-200 pt-5 text-sm text-slate-500 dark:border-slate-800">Select a section to adjust its spacing, alignment, background and device visibility.</p>
+      {isLocked(section.props) && (
+        <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+          This section is locked. Unlock it in the Layers tab to change it.
+        </p>
       )}
+      <fieldset disabled={isLocked(section.props)} className="min-w-0 disabled:opacity-60">
+        <PropsEditor
+          value={merged}
+          defaults={SECTION_DEFAULTS[section.type]}
+          onChange={(props, key) => useEditor.getState().replaceProps(section.id, props, key)}
+        />
+      </fieldset>
     </div>
   );
 }

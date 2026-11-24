@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "incremental": false,
+    "plugins": [],
+    "outDir": "../.test-build",
+    "rootDir": "../src"
+  },
+  "include": ["../src/modules/site/style.ts", "../src/modules/site/fonts.ts", "../next-env.d.ts"]
+}

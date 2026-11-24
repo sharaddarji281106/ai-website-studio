@@ -2,6 +2,7 @@
 import { Briefcase, Building2, LayoutTemplate, Loader2, Megaphone, ShoppingBag, Sparkles, Utensils, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { StartBlankButton } from "./start-blank-button";
 
 const EXAMPLES: Record<string, string> = {
   Restaurant: "Create a modern restaurant website with a beautiful homepage, menu section, online reservation, gallery, contact page, and responsive design.",
@@ -30,11 +31,11 @@ export function NewWebsiteForm({ atLimit, used, max, plan }: { atLimit: boolean;
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!loading) return;
-    setElapsed(0);
-    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => clearInterval(t);
-  }, [loading]);
+  if (!loading) return;
+
+  const t = setInterval(() => setElapsed((s) => s + 1), 1000);
+  return () => clearInterval(t);
+}, [loading]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -45,7 +46,8 @@ export function NewWebsiteForm({ atLimit, used, max, plan }: { atLimit: boolean;
     if (disabled || tooShort) return;
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    setLoading(true);
+    setElapsed(0);
+setLoading(true);
     setError("");
     setNotice("");
     try {
@@ -118,6 +120,7 @@ export function NewWebsiteForm({ atLimit, used, max, plan }: { atLimit: boolean;
             <button onClick={generate} disabled={disabled || tooShort} className="btn-primary gap-2 px-5 py-2.5">
               {loading ? <><Loader2 size={16} className="animate-spin" /> Generating… {clock(elapsed)}</> : <><Sparkles size={16} /> Generate website</>}
             </button>
+            {!loading && <StartBlankButton label="Or build it myself" />}
             {loading && (
               <>
                 <button type="button" onClick={() => abortRef.current?.abort()} className="btn-ghost gap-1.5"><X size={15} /> Stop waiting</button>

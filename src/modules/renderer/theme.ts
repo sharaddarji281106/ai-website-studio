@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { fontStack } from "../site/fonts";
 import type { Theme } from "@/modules/site/schema";
 
 export function onColor(hex: string): string {
@@ -11,6 +12,7 @@ export function themeStyle(theme: Theme): CSSProperties {
   return {
     "--primary": theme.primaryColor,
     "--on-primary": onColor(theme.primaryColor),
-    "--font": `'${theme.fontFamily}'`,
+    "--font": fontStack(theme.fontFamily),
+    ...(theme.headingFont ? { "--font-heading": fontStack(theme.headingFont) } : {}),
   } as CSSProperties;
 }

@@ -6,7 +6,7 @@ export async function proxy(req: NextRequest) {
 
   if (!token) {
     const url = new URL("/login", req.url);
-    url.searchParams.set("callbackUrl", req.nextUrl.pathname);
+    url.searchParams.set("callbackUrl", req.nextUrl.pathname + req.nextUrl.search);
     return NextResponse.redirect(url);
   }
   if (req.nextUrl.pathname.startsWith("/admin") && token.role !== "ADMIN") {

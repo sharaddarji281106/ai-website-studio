@@ -7,6 +7,7 @@ import { slugify } from "@/lib/slug";
 import { getSessionUser } from "@/lib/session";
 import { sanitizeDeep } from "@/modules/site/normalize";
 import { FONTS, SECTION_TYPES } from "@/modules/site/schema";
+import { cleanSectionProps } from "@/modules/site/style";
 
 const MAX_PAGES = 30;
 
@@ -21,6 +22,7 @@ const docSchema = z.object({
     primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     mode: z.enum(["light", "dark"]),
     fontFamily: z.enum(FONTS),
+    headingFont: z.enum(FONTS).optional(),
   }),
   pages: z
     .array(
@@ -72,7 +74,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     isHome: p.id === homeId,
     seo: p.seo as Prisma.InputJsonValue,
     content: {
-      sections: p.sections.map((s) => ({ ...s, props: sanitizeDeep(s.props) })),
+      // styles are validated again here, so only well-formed values can ever be stored
+      sections: p.sections.map((s) => ({ ...s, props: cleanSectionProps(sanitizeDeep(s.props) as Record<string, unknown>) })),
     } as unknown as Prisma.InputJsonValue,
   });
 

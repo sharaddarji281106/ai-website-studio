@@ -1,4 +1,21 @@
+import { isLocked } from "@/modules/site/style";
 import type { Doc, EditOp, EditorPage } from "./types";
+
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+
+/** Like {...cur, ...patch}, except `__style` is merged key by key, so a small AI style change
+ *  (say, a new heading size) never wipes the rest of the section's styling. */
+function mergeProps(cur: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...cur, ...patch };
+  if (isRecord(cur.__style) && isRecord(patch.__style)) {
+    const style: Record<string, unknown> = { ...cur.__style, ...patch.__style };
+    if (isRecord(cur.__style.responsive) && isRecord(patch.__style.responsive)) {
+      style.responsive = { ...cur.__style.responsive, ...patch.__style.responsive };
+    }
+    next.__style = style;
+  }
+  return next;
+}
 
 export function mapPage(d: Doc, pageId: string, fn: (p: EditorPage) => EditorPage): Doc {
   return { ...d, pages: d.pages.map((p) => (p.id === pageId ? fn(p) : p)) };
@@ -18,11 +35,11 @@ export function applyOps(doc: Doc, pageId: string, ops: EditOp[]): Doc {
       case "updateProps":
         d = mapPage(d, pageId, (p) => ({
           ...p,
-          sections: p.sections.map((s) => (s.id === op.sectionId ? { ...s, props: { ...s.props, ...op.props } } : s)),
+          sections: p.sections.map((s) => (s.id === op.sectionId && !isLocked(s.props) ? { ...s, props: mergeProps(s.props, op.props) } : s)),
         }));
         break;
       case "removeSection":
-        d = mapPage(d, pageId, (p) => ({ ...p, sections: p.sections.filter((s) => s.id !== op.sectionId) }));
+        d = mapPage(d, pageId, (p) => ({ ...p, sections: p.sections.filter((s) => s.id !== op.sectionId || isLocked(s.props)) }));
         break;
       case "addSection":
         d = mapPage(d, pageId, (p) => {

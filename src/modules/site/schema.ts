@@ -1,14 +1,16 @@
 import { z } from "zod";
+import { FONTS, type FontName } from "./font-names";
+export { FONTS };
+export type { FontName };
 
 export const SECTION_TYPES = [
-  "navbar", "hero", "about", "features", "menu", "products", "pricing",
+  "navbar", "hero", "about", "features", "columns", "menu", "products", "pricing",
   "testimonials", "gallery", "faq", "blog", "contact", "cta", "footer",
 ] as const;
 export const CATEGORIES = [
   "business", "portfolio", "ecommerce", "restaurant", "education", "blog",
   "landing", "agency", "personal", "saas", "realestate",
 ] as const;
-export const FONTS = ["Inter", "Poppins", "Playfair Display", "Roboto", "Lora"] as const;
 
 /** Raw shape we ask the AI for (lenient; normalize() tightens it). */
 export const rawSpecSchema = z.object({
@@ -38,7 +40,7 @@ export type SitePage = { name: string; slug: string; sections: Section[] };
 export type SiteSpec = {
   siteName: string;
   category: (typeof CATEGORIES)[number];
-  theme: { primaryColor: string; mode: "light" | "dark"; fontFamily: (typeof FONTS)[number] };
+  theme: { primaryColor: string; mode: "light" | "dark"; fontFamily: FontName; headingFont?: FontName };
   pages: SitePage[];
 };
 

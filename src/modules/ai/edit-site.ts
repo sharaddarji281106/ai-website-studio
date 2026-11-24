@@ -3,6 +3,7 @@ import { slugify } from "@/lib/slug";
 import { uid } from "@/lib/uid";
 import { sanitizeDeep } from "@/modules/site/normalize";
 import { FONTS, SECTION_TYPES, type SectionType, type Theme } from "@/modules/site/schema";
+import { cleanSectionProps } from "@/modules/site/style";
 import { AIError } from "./errors";
 import { getProvider } from "./providers";
 
@@ -38,13 +39,20 @@ Operations (use only these):
 
 Section types: ${JSON.stringify(SECTION_TYPES)}
 Fonts: ${JSON.stringify(FONTS)}
-Section props: navbar{brand,links[{label,href}]} hero{heading,subheading,ctaLabel,ctaHref,imageQuery} about{heading,body,imageQuery} features{heading,subheading,items[{title,description,icon}]} menu{heading,categories[{name,items[{name,description,price}]}]} products{heading,items[{name,description,price,imageQuery}]} pricing{heading,subheading,plans[{name,price,features[],ctaLabel}]} testimonials{heading,items[{quote,author,role}]} gallery{heading,images[{imageQuery,caption}]} faq{heading,items[{question,answer}]} blog{heading,posts[{title,excerpt,date}]} contact{heading,body,fields[],email,phone,address} cta{heading,body,ctaLabel,ctaHref} footer{brand,links[{label,href}],copyright}
-Style props any section may have: "__style": {"pad":"none|sm|md|lg","align":"default|left|center","bg":"default|muted|primary|dark"}
+Section props: navbar{brand,links[{label,href}]} hero{heading,subheading,ctaLabel,ctaHref,imageQuery} about{heading,body,imageQuery} features{heading,subheading,items[{title,description,icon}]} columns{heading,subheading,plain(boolean),items[{title,body,imageQuery,ctaLabel,ctaHref}]} menu{heading,categories[{name,items[{name,description,price}]}]} products{heading,items[{name,description,price,imageQuery}]} pricing{heading,subheading,plans[{name,price,features[],ctaLabel}]} testimonials{heading,items[{quote,author,role}]} gallery{heading,images[{imageQuery,caption}]} faq{heading,items[{question,answer}]} blog{heading,posts[{title,excerpt,date}]} contact{heading,body,fields[],email,phone,address} cta{heading,body,ctaLabel,ctaHref} footer{brand,links[{label,href}],copyright}
+Style props any section may have, inside "__style" (include only the keys you change; they are merged with the existing style):
+  pad none|sm|md|lg; align default|left|center|right; bg default|muted|primary|dark; width narrow|default|wide|full;
+  padTop, padBottom, marginTop, marginBottom, marginX (px numbers); headingSize 16-120 and bodySize 12-32 (px);
+  headingWeight, bodyWeight (300-900); headingFont, bodyFont (one of the fonts above); headingTransform none|uppercase|capitalize;
+  textColor, headingColor, accentColor, bgColor (#RRGGBB); bgGradient {"from":"#RRGGBB","to":"#RRGGBB","angle":0-360};
+  borderWidth 0-12, borderColor, radius 0-96, shadow none|sm|md|lg, opacity 20-100;
+  cols 1-6 (columns in a card grid), gap 0-96 (px between grid items), colAlign start|center|end.
+  Per-device values: "responsive": {"tablet": {...}, "mobile": {...}} using only padTop, padBottom, marginTop, marginBottom, headingSize, bodySize.
 
 Rules:
 - Make the SMALLEST change that satisfies the request. Do NOT rewrite or remove content the user did not mention. Keep every existing section id.
 - In updateProps, arrays (like items) replace the old array, so include the complete array when you change one.
-- Dark theme / colors / fonts are updateTheme, not section edits. "Make navigation transparent" or similar style requests use "__style" or navbar props.
+- Site-wide dark mode, brand color and fonts are updateTheme. A change to ONE section's colors, fonts, spacing or background uses that section's "__style". "Make navigation transparent" or similar style requests use "__style" or navbar props.
 - To redesign a whole page, remove the old sections and add new ones. Only do this when the user explicitly asks for a redesign.
 - If selectedSectionId is given, the request refers to that section unless the user says otherwise.
 - Never output image URLs; use imageQuery. Plain text only, no HTML.
@@ -80,14 +88,14 @@ function normalizeOps(raw: unknown, ctx: EditContext): { summary: string; ops: P
 
   for (const o of parsed.data.ops) {
     if (o.op === "updateProps" && known.has(o.sectionId)) {
-      ops.push({ op: "updateProps", sectionId: o.sectionId, props: sanitizeDeep(o.props) as Record<string, unknown> });
+      ops.push({ op: "updateProps", sectionId: o.sectionId, props: cleanSectionProps(sanitizeDeep(o.props) as Record<string, unknown>, { allowImage: false }) });
     } else if (o.op === "removeSection" && known.has(o.sectionId)) {
       ops.push({ op: "removeSection", sectionId: o.sectionId });
     } else if (o.op === "addSection" && isType(o.type)) {
       ops.push({
         op: "addSection",
         afterSectionId: o.afterSectionId && known.has(o.afterSectionId) ? o.afterSectionId : null,
-        section: { id: uid(), type: o.type, props: sanitizeDeep(o.props) as Record<string, unknown> },
+        section: { id: uid(), type: o.type, props: cleanSectionProps(sanitizeDeep(o.props) as Record<string, unknown>, { allowImage: false }) },
       });
     } else if (o.op === "updateTheme") {
       const t: Partial<Theme> = {};
@@ -103,7 +111,7 @@ function normalizeOps(raw: unknown, ctx: EditContext): { summary: string; ops: P
       usedSlugs.add(slug);
       const sections = o.sections
         .filter((s) => isType(s.type))
-        .map((s) => ({ id: uid(), type: s.type as SectionType, props: sanitizeDeep(s.props) as Record<string, unknown> }));
+        .map((s) => ({ id: uid(), type: s.type as SectionType, props: cleanSectionProps(sanitizeDeep(s.props) as Record<string, unknown>, { allowImage: false }) }));
       if (sections.length) {
         ops.push({ op: "createPage", page: { id: uid(), name: String(sanitizeDeep(o.name)), slug, isHome: false, seo: {}, sections } });
       }

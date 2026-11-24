@@ -50,7 +50,7 @@ export function Toolbar() {
     <header className="relative z-50 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-3 dark:border-slate-800 dark:bg-slate-950">
       <Link href="/dashboard" className="icon-btn" aria-label="Back to dashboard"><ArrowLeft size={18} /></Link>
       <input
-        className="w-48 truncate rounded-lg bg-transparent px-2 py-1 text-sm font-semibold hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:hover:bg-slate-800 dark:focus:bg-slate-800"
+        className="w-24 truncate rounded-lg sm:w-48 bg-transparent px-2 py-1 text-sm font-semibold hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:hover:bg-slate-800 dark:focus:bg-slate-800"
         value={s.doc.name}
         onChange={(e) => s.renameProject(e.target.value)}
         aria-label="Website name"

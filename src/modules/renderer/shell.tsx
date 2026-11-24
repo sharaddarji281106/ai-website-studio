@@ -1,28 +1,15 @@
 import type { ElementType, ReactNode } from "react";
 import type { Section } from "@/modules/site/schema";
+import { sectionRender } from "@/modules/site/style";
 import { cx, type Rec } from "./utils";
 
-type Style = { pad?: string; align?: string; bg?: string };
-type Hide = { desktop?: boolean; tablet?: boolean; mobile?: boolean };
-
-/** Wraps every section: applies spacing, alignment, background and per-device visibility. */
+/** Wraps every section: applies the section's style (spacing, typography, colors, background, border,
+ *  per-device values and visibility). All of it comes from sectionRender(), which validates the data. */
 export function Shell({ section, tag, className, children }: { section: Section; tag?: ElementType; className?: string; children: ReactNode }) {
   const Tag = tag ?? "section";
-  const st = ((section.props as Rec).__style ?? {}) as Style;
-  const hide = ((section.props as Rec).__hide ?? {}) as Hide;
+  const r = sectionRender(section.props, section.type);
   return (
-    <Tag
-      className={cx(
-        "st-sec",
-        className,
-        `st-pad-${st.pad ?? "md"}`,
-        `st-align-${st.align ?? "default"}`,
-        `st-bg-${st.bg ?? "default"}`,
-        hide.desktop && "st-hide-desktop",
-        hide.tablet && "st-hide-tablet",
-        hide.mobile && "st-hide-mobile",
-      )}
-    >
+    <Tag className={cx("st-sec", className, r.className)} style={r.style}>
       {children}
     </Tag>
   );

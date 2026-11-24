@@ -1,5 +1,6 @@
 "use client";
 import { LogOut } from "lucide-react";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 
@@ -29,6 +30,9 @@ export function UserMenu({ name, plan, email }: { name: string; plan: string; em
             {email && <p className="truncate text-xs text-slate-500">{email}</p>}
             <span className="badge mt-2 inline-block">{plan} plan</span>
           </div>
+          <div className="my-1 h-px bg-slate-200 dark:bg-slate-800 sm:hidden" />
+          <Link role="menuitem" href="/dashboard" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 sm:hidden">Websites</Link>
+          <Link role="menuitem" href="/studio" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 sm:hidden">Studio</Link>
           <div className="my-1 h-px bg-slate-200 dark:bg-slate-800" />
           <button role="menuitem" onClick={() => signOut({ callbackUrl: "/" })} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800">
             <LogOut size={15} /> Sign out

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const LABELS: Record<string, string> = {
   ctaLabel: "Button label", ctaHref: "Button link", imageQuery: "Image description", image: "Image URL (https://…)",
-  href: "Link", brand: "Brand name", subheading: "Subheading", imageQueryAlt: "Image description",
+  plain: "Plain columns (no card)", href: "Link", brand: "Brand name", subheading: "Subheading", imageQueryAlt: "Image description",
 };
 const humanize = (k: string) => LABELS[k] ?? k.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
 const LONG = /body|description|quote|answer|excerpt|subheading/i;

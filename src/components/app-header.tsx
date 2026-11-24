@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppNav } from "./app-nav";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
@@ -9,9 +9,7 @@ export function AppHeader({ name, plan, email }: { name: string; plan: string; e
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <div className="flex items-center gap-8">
           <Logo href="/dashboard" />
-          <nav aria-label="App" className="hidden sm:block">
-            <Link href="/dashboard" className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium dark:bg-slate-800">Websites</Link>
-          </nav>
+          <AppNav />
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />

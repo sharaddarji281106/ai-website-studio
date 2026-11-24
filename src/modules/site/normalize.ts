@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { slugify } from "@/lib/slug";
 import { AIError } from "@/modules/ai/errors";
 import { CATEGORIES, FONTS, SECTION_TYPES, rawSpecSchema, type SiteSpec } from "./schema";
+import { cleanSectionProps } from "./style";
 
 /** Strip markup and dangerous URL schemes from AI output; cap sizes. */
 export function sanitizeDeep(v: unknown, depth = 0): unknown {
@@ -15,7 +16,7 @@ export function sanitizeDeep(v: unknown, depth = 0): unknown {
   if (v && typeof v === "object") {
     return Object.fromEntries(
       Object.entries(v as Record<string, unknown>)
-        .slice(0, 40)
+        .slice(0, 60)
         .map(([k, val]) => [k.slice(0, 60), sanitizeDeep(val, depth + 1)]),
     );
   }
@@ -35,7 +36,7 @@ export function normalizeSpec(raw: unknown): SiteSpec {
         .map((sec) => ({
           id: randomUUID(),
           type: sec.type as (typeof SECTION_TYPES)[number],
-          props: sanitizeDeep(sec.props) as Record<string, unknown>,
+          props: cleanSectionProps(sanitizeDeep(sec.props) as Record<string, unknown>, { allowImage: false }),
         }));
       let slug = slugify(p.slug || p.name);
       let n = 2;

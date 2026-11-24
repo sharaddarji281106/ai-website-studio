@@ -1,8 +1,10 @@
 "use client";
-import { Copy, GripVertical, House, Plus, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, GripVertical, House, Lock, Plus, Trash2 } from "lucide-react";
 import { useState, type DragEvent } from "react";
-import { SECTION_TYPES, type SectionType } from "@/modules/site/schema";
-import { SECTION_META } from "./defaults";
+import { SECTION_TYPES, type Section, type SectionType } from "@/modules/site/schema";
+import { cleanHide, isLocked } from "@/modules/site/style";
+import { SECTION_META, sectionLabel } from "./defaults";
+import { LAYOUT_PRESETS } from "./layouts";
 import { selectActivePage, useEditor } from "./store";
 
 /* ---------------- Pages ---------------- */
@@ -61,13 +63,76 @@ export function PagesPanel() {
 }
 
 /* ---------------- Layers ---------------- */
+type DropFn = (e: DragEvent, index: number) => void;
+
+function LayerRow({ s, i, selected, over, setOver, drop }: { s: Section; i: number; selected: boolean; over: boolean; setOver: (i: number | null) => void; drop: DropFn }) {
+  const st = useEditor.getState;
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const meta = SECTION_META[s.type];
+  const Icon = meta.icon;
+  const label = sectionLabel(s);
+  const locked = isLocked(s.props);
+  const hide = cleanHide(s.props.__hide);
+  const hidden = !!(hide.desktop && hide.tablet && hide.mobile);
+  const fixed = s.type === "navbar" || s.type === "footer"; // these can be moved but not deleted
+
+  const setProp = (patch: Record<string, unknown>, remove: string[] = []) => {
+    const props = { ...s.props, ...patch };
+    for (const k of remove) delete props[k];
+    st().replaceProps(s.id, props);
+  };
+  const commitName = () => {
+    setEditing(false);
+    const v = draft.trim().slice(0, 60);
+    if (v === label) return;
+    if (v && v !== meta.label) setProp({ __label: v });
+    else setProp({}, ["__label"]);
+  };
+
+  return (
+    <div
+      draggable={!locked && !editing}
+      onDragStart={(e) => { e.dataTransfer.setData("application/x-section-id", s.id); st().setDragging(true); }}
+      onDragEnd={() => { setOver(null); st().setDragging(false); }}
+      onDragOver={(e) => { e.preventDefault(); setOver(i); }}
+      onDrop={(e) => drop(e, i)}
+      onClick={() => st().select(s.id)}
+      className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2 py-2 text-sm ${over ? "border-t-2 border-indigo-500" : "border-transparent"} ${selected ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"} ${hidden ? "opacity-60" : ""}`}
+    >
+      <GripVertical size={14} className={`shrink-0 text-slate-400 ${locked ? "opacity-30" : "cursor-grab"}`} />
+      <Icon size={15} className="shrink-0" />
+      {editing ? (
+        <input
+          autoFocus className="input !py-0.5" value={draft} maxLength={60} aria-label="Layer name"
+          onChange={(e) => setDraft(e.target.value)} onClick={(e) => e.stopPropagation()}
+          onBlur={commitName}
+          onKeyDown={(e) => { if (e.key === "Enter") commitName(); if (e.key === "Escape") setEditing(false); }}
+        />
+      ) : (
+        <span className="flex-1 truncate" title={locked ? label : "Double-click to rename"} onDoubleClick={() => { if (!locked) { setDraft(label); setEditing(true); } }}>
+          {label}
+        </span>
+      )}
+      <button className="icon-btn" disabled={locked} title={hidden ? "Show section" : "Hide section (also hidden on the published site)"} aria-label={hidden ? "Show section" : "Hide section"} onClick={(e) => { e.stopPropagation(); if (hidden) setProp({}, ["__hide"]); else setProp({ __hide: { desktop: true, tablet: true, mobile: true } }); }}>
+        {hidden ? <EyeOff size={13} /> : <Eye size={13} />}
+      </button>
+      <button className={`icon-btn ${locked ? "text-indigo-600" : "opacity-40"}`} title={locked ? "Unlock section" : "Lock section"} aria-label={locked ? "Unlock section" : "Lock section"} aria-pressed={locked} onClick={(e) => { e.stopPropagation(); if (locked) setProp({}, ["__locked"]); else setProp({ __locked: true }); }}>
+        <Lock size={13} />
+      </button>
+      <button className="icon-btn" title="Duplicate" aria-label="Duplicate section" onClick={(e) => { e.stopPropagation(); st().duplicateSection(s.id); }}><Copy size={13} /></button>
+      <button className="icon-btn text-red-500 disabled:opacity-30" disabled={locked || fixed} title={fixed ? "Navigation and footer can't be deleted" : "Delete"} aria-label="Delete section" onClick={(e) => { e.stopPropagation(); st().removeSection(s.id); }}><Trash2 size={13} /></button>
+    </div>
+  );
+}
+
 export function LayersPanel() {
   const page = useEditor(selectActivePage);
   const selectedId = useEditor((s) => s.selectedId);
   const st = useEditor.getState;
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
-  const drop = (e: DragEvent, index: number) => {
+  const drop: DropFn = (e, index) => {
     e.preventDefault();
     setOverIndex(null);
     const id = e.dataTransfer.getData("application/x-section-id");
@@ -80,29 +145,10 @@ export function LayersPanel() {
   if (!page) return null;
   return (
     <div className="grid gap-1 p-3">
-      {page.sections.length === 0 && <p className="text-sm text-slate-500">No sections yet.</p>}
-      {page.sections.map((s, i) => {
-        const meta = SECTION_META[s.type];
-        const Icon = meta.icon;
-        return (
-          <div
-            key={s.id}
-            draggable
-            onDragStart={(e) => { e.dataTransfer.setData("application/x-section-id", s.id); st().setDragging(true); }}
-            onDragEnd={() => { setOverIndex(null); st().setDragging(false); }}
-            onDragOver={(e) => { e.preventDefault(); setOverIndex(i); }}
-            onDrop={(e) => drop(e, i)}
-            onClick={() => st().select(s.id)}
-            className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-2 text-sm ${overIndex === i ? "border-t-2 border-indigo-500" : "border-transparent"} ${selectedId === s.id ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"}`}
-          >
-            <GripVertical size={14} className="shrink-0 cursor-grab text-slate-400" />
-            <Icon size={15} className="shrink-0" />
-            <span className="flex-1 truncate">{meta.label}</span>
-            <button className="icon-btn" title="Duplicate" onClick={(e) => { e.stopPropagation(); st().duplicateSection(s.id); }}><Copy size={13} /></button>
-            <button className="icon-btn text-red-500" title="Delete" onClick={(e) => { e.stopPropagation(); st().removeSection(s.id); }}><Trash2 size={13} /></button>
-          </div>
-        );
-      })}
+      {page.sections.length === 0 && <p className="text-sm text-slate-500">No sections yet. Add one from the Components tab.</p>}
+      {page.sections.map((s, i) => (
+        <LayerRow key={s.id} s={s} i={i} selected={selectedId === s.id} over={overIndex === i} setOver={setOverIndex} drop={drop} />
+      ))}
       <div className="h-6" onDragOver={(e) => { e.preventDefault(); setOverIndex(page.sections.length); }} onDrop={(e) => drop(e, page.sections.length)} />
     </div>
   );
@@ -111,26 +157,43 @@ export function LayersPanel() {
 /* ---------------- Components ---------------- */
 export function ComponentsPanel() {
   const st = useEditor.getState;
+  const empty = useEditor((s) => selectActivePage(s).sections.length === 0);
   return (
-    <div className="grid grid-cols-2 gap-2 p-3">
-      {SECTION_TYPES.map((t) => {
-        const meta = SECTION_META[t];
-        const Icon = meta.icon;
-        return (
-          <button
-            key={t}
-            draggable
-            onDragStart={(e) => { e.dataTransfer.setData("application/x-section-type", t); e.dataTransfer.effectAllowed = "copy"; st().setDragging(true); }}
-            onDragEnd={() => st().setDragging(false)}
-            onClick={() => st().addSection(t)}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-            title="Click to add, or drag onto the canvas"
-          >
-            <Icon size={18} />
-            {meta.label}
-          </button>
-        );
-      })}
+    <div className="grid gap-4 p-3">
+      {empty && (
+        <div className="grid gap-2">
+          <h3 className="panel-title">Starter layouts</h3>
+          {LAYOUT_PRESETS.map((l) => (
+            <button key={l.id} type="button" onClick={() => st().applyLayout(l.id)} className="rounded-xl border border-slate-200 px-3 py-2 text-left transition hover:border-indigo-400 hover:bg-indigo-50 dark:border-slate-700 dark:hover:bg-slate-800">
+              <span className="block text-sm font-medium">{l.label}</span>
+              <span className="block text-xs text-slate-500">{l.description}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="grid gap-2">
+        {empty && <h3 className="panel-title">Sections</h3>}
+        <div className="grid grid-cols-2 gap-2">
+          {SECTION_TYPES.map((t) => {
+            const meta = SECTION_META[t];
+            const Icon = meta.icon;
+            return (
+              <button
+                key={t}
+                draggable
+                onDragStart={(e) => { e.dataTransfer.setData("application/x-section-type", t); e.dataTransfer.effectAllowed = "copy"; st().setDragging(true); }}
+                onDragEnd={() => st().setDragging(false)}
+                onClick={() => st().addSection(t)}
+                className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                title="Click to add, or drag onto the canvas"
+              >
+                <Icon size={18} />
+                {meta.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

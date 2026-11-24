@@ -7,10 +7,17 @@ import type { Section, Theme } from "@/modules/site/schema";
 
 export const dynamic = "force-dynamic";
 
-export default async function StudioPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function StudioPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ panel?: string | string[] }>;
+}) {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/studio/${(await params).id}`)}`);
   const { id } = await params;
+  const { panel } = await searchParams;
   const project = await getOwnedProject(user.id, id);
   if (!project) notFound();
 
@@ -27,5 +34,13 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
     })),
   };
 
-  return <EditorShell projectId={project.id} initialDoc={doc} status={project.status} subdomain={project.subdomain} />;
+  return (
+    <EditorShell
+      projectId={project.id}
+      initialDoc={doc}
+      status={project.status}
+      subdomain={project.subdomain}
+      initialPanel={typeof panel === "string" ? panel : undefined}
+    />
+  );
 }

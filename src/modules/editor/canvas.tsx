@@ -1,10 +1,12 @@
 "use client";
-import { ChevronDown, ChevronUp, Copy, GripVertical, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, GripVertical, Lock, Trash2 } from "lucide-react";
 import { Fragment, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { renderSection } from "@/modules/renderer/render-section";
 import { SiteRoot } from "@/modules/renderer/site-view";
 import { SECTION_TYPES, type Section, type SectionType } from "@/modules/site/schema";
-import { SECTION_META } from "./defaults";
+import { isLocked } from "@/modules/site/style";
+import { SECTION_META, sectionLabel } from "./defaults";
+import { LAYOUT_PRESETS } from "./layouts";
 import { applyOps } from "./ops";
 import { selectActivePage, useEditor } from "./store";
 
@@ -57,10 +59,39 @@ function DropZone({ index, onDropAt }: { index: number; onDropAt: (e: DragEvent,
   );
 }
 
+function EmptyCanvas() {
+  return (
+    <div className="grid place-items-center px-6 py-24 text-center">
+      <div>
+        <p className="text-lg font-semibold text-slate-500">Add your first section</p>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-slate-400">Pick a starter layout, click a component in the Components tab, or drag one onto the page.</p>
+        <div className="mx-auto mt-5 grid max-w-xl gap-3 sm:grid-cols-3">
+          {LAYOUT_PRESETS.map((l) => (
+            <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); useEditor.getState().applyLayout(l.id); }} className="rounded-xl border border-slate-300 bg-white/60 p-3 text-left transition hover:border-indigo-400 hover:bg-indigo-50 dark:border-slate-600 dark:bg-slate-900/40 dark:hover:bg-slate-800">
+              <span className="block text-sm font-semibold text-slate-700 dark:text-slate-200">{l.label}</span>
+              <span className="mt-0.5 block text-xs text-slate-500">{l.description}</span>
+            </button>
+          ))}
+        </div>
+        <p className="mt-5 text-xs text-slate-400">Or add a single section:</p>
+        <div className="mt-2 flex flex-wrap justify-center gap-2">
+          {(["navbar", "hero", "footer"] as const).map((t) => (
+            <button key={t} type="button" className="btn-mini" onClick={(e) => { e.stopPropagation(); useEditor.getState().addSection(t); }}>
+              + {SECTION_META[t].label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SectionFrame({ section, index, count, readOnly }: { section: Section; index: number; count: number; readOnly: boolean }) {
   const selected = useEditor((s) => s.selectedId === section.id);
   const { select, nudgeSection, duplicateSection, removeSection, setDragging } = useEditor.getState();
-  const meta = SECTION_META[section.type];
+  const label = sectionLabel(section);
+  const locked = isLocked(section.props);
+  const fixed = section.type === "navbar" || section.type === "footer";
 
   return (
     <div
@@ -76,19 +107,19 @@ function SectionFrame({ section, index, count, readOnly }: { section: Section; i
       {!readOnly && (
         <div className={`absolute right-3 top-3 z-30 flex items-center gap-0.5 rounded-lg bg-slate-900 p-1 text-white shadow-lg transition ${selected ? "" : "pointer-events-none opacity-0 group-hover/section:pointer-events-auto group-hover/section:opacity-100"}`}>
           <span
-            draggable
+            draggable={!locked}
             onDragStart={(e) => { e.dataTransfer.setData("application/x-section-id", section.id); e.dataTransfer.effectAllowed = "move"; setDragging(true); }}
             onDragEnd={() => setDragging(false)}
-            className="grid cursor-grab place-items-center px-1 active:cursor-grabbing"
-            title="Drag to reorder"
+            className={`grid place-items-center px-1 ${locked ? "opacity-40" : "cursor-grab active:cursor-grabbing"}`}
+            title={locked ? "Locked" : "Drag to reorder"}
           >
             <GripVertical size={14} />
           </span>
-          <span className="px-1.5 text-[11px] font-medium">{meta.label}</span>
-          <button className="tb-btn" aria-label="Move up" disabled={index === 0} onClick={(e) => { e.stopPropagation(); nudgeSection(section.id, -1); }}><ChevronUp size={14} /></button>
-          <button className="tb-btn" aria-label="Move down" disabled={index === count - 1} onClick={(e) => { e.stopPropagation(); nudgeSection(section.id, 1); }}><ChevronDown size={14} /></button>
+          <span className="flex items-center gap-1 px-1.5 text-[11px] font-medium">{locked && <Lock size={10} />}{label}</span>
+          <button className="tb-btn" aria-label="Move up" disabled={index === 0 || locked} onClick={(e) => { e.stopPropagation(); nudgeSection(section.id, -1); }}><ChevronUp size={14} /></button>
+          <button className="tb-btn" aria-label="Move down" disabled={index === count - 1 || locked} onClick={(e) => { e.stopPropagation(); nudgeSection(section.id, 1); }}><ChevronDown size={14} /></button>
           <button className="tb-btn" aria-label="Duplicate" onClick={(e) => { e.stopPropagation(); duplicateSection(section.id); }}><Copy size={14} /></button>
-          <button className="tb-btn text-red-300" aria-label="Delete" onClick={(e) => { e.stopPropagation(); removeSection(section.id); }}><Trash2 size={14} /></button>
+          <button className="tb-btn text-red-300" aria-label="Delete" disabled={locked || fixed} onClick={(e) => { e.stopPropagation(); removeSection(section.id); }}><Trash2 size={14} /></button>
         </div>
       )}
     </div>
@@ -129,13 +160,14 @@ export function Canvas() {
           Previewing AI changes. Accept or reject them in the AI tab.
         </div>
       )}
+      <p className="mx-auto mb-2 text-center text-xs font-medium text-slate-500" aria-live="polite">
+        {device[0].toUpperCase() + device.slice(1)} · {FRAME_WIDTH[device]}px
+      </p>
       <div className="overflow-hidden rounded-xl shadow-2xl ring-1 ring-black/10 transition-all duration-300" style={{ maxWidth: FRAME_WIDTH[device], margin: "0 auto" }}>
         <Frame width={FRAME_WIDTH[device]}>
           <div onClickCapture={blockLinks}>
-            <SiteRoot theme={shown.theme}>
-              {page.sections.length === 0 && (
-                <div className="grid h-64 place-items-center text-sm text-slate-400">Empty page. Drag a component here or click one in the Components tab.</div>
-              )}
+            <SiteRoot theme={shown.theme} sections={page.sections}>
+              {page.sections.length === 0 && !readOnly && <EmptyCanvas />}
               {page.sections.map((s, i) => (
                 <Fragment key={s.id}>
                   {!readOnly && <DropZone index={i} onDropAt={onDropAt} />}

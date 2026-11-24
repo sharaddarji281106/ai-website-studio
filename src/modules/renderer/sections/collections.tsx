@@ -1,7 +1,7 @@
 import type { Section } from "@/modules/site/schema";
 import { Media } from "../media";
 import { Head, Shell } from "../shell";
-import { arr, str, strs } from "../utils";
+import { arr, resolveHref, str, strs } from "../utils";
 
 type P = { section: Section; base: string };
 
@@ -23,6 +23,30 @@ export function Features({ section }: P) {
               </div>
               <h3>{str(it.title)}</h3>
               <p className="st-muted">{str(it.description)}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+export function Columns({ section, base }: P) {
+  const p = section.props;
+  const plain = p.plain === true;
+  return (
+    <Shell section={section} className="st-columns">
+      <div className="st-wrap">
+        <Head p={p} />
+        <div className="st-grid c3">
+          {arr(p.items).map((it, i) => (
+            <article key={i} className={plain ? "st-cell" : "st-card"}>
+              <Media src={it.image} query={it.imageQuery} className="st-tile-media" />
+              {str(it.title) && <h3>{str(it.title)}</h3>}
+              {str(it.body) && <p className="st-muted">{str(it.body)}</p>}
+              {str(it.ctaLabel) && (
+                <div className="st-actions"><a className="st-btn" href={resolveHref(base, it.ctaHref)}>{str(it.ctaLabel)}</a></div>
+              )}
             </article>
           ))}
         </div>

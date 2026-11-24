@@ -22,6 +22,22 @@ export async function createProjectFromSpec(userId: string, spec: SiteSpec) {
   });
 }
 
+/** Manual Build Mode: an empty website with a single empty home page (the full default theme is required by the editor). */
+export async function createBlankProject(userId: string, name: string) {
+  return db.project.create({
+    data: {
+      userId,
+      name,
+      category: "blank",
+      theme: { primaryColor: "#4f46e5", mode: "light", fontFamily: "Inter" } as unknown as Prisma.InputJsonValue,
+      pages: {
+        create: [{ name: "Home", slug: "home", isHome: true, content: { sections: [] } as unknown as Prisma.InputJsonValue }],
+      },
+    },
+    select: { id: true },
+  });
+}
+
 /** Every query is scoped by userId, so users can never touch each other's data. */
 export function getOwnedProject(userId: string, projectId: string) {
   return db.project.findFirst({

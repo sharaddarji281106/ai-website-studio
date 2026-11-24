@@ -1,6 +1,6 @@
 import type { Section } from "@/modules/site/schema";
 import { Media } from "../media";
-import { Head, Shell } from "../shell";
+import { Shell } from "../shell";
 import { resolveHref, str } from "../utils";
 
 type P = { section: Section; base: string };

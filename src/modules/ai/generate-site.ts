@@ -10,7 +10,7 @@ JSON shape:
   "siteName": "string",
   "category": one of ${JSON.stringify(CATEGORIES)},
   "theme": { "primaryColor": "#RRGGBB", "mode": "light" or "dark", "fontFamily": one of ${JSON.stringify(FONTS)} },
-  "pages": [ { "name": "Home", "slug": "home", "sections": [ { "type": one of ${JSON.stringify(SECTION_TYPES)}, "props": { } } ] } ]
+  "pages": [ { "name": "Home", "slug": "home", "sections": [ { "type": one of ${JSON.stringify(SECTION_TYPES.filter((t) => t !== "columns"))}, "props": { } } ] } ]
 }
 
 Rules:
