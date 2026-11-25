@@ -14,6 +14,7 @@ export function handleKnownError(e: unknown) {
   }
   if (e instanceof Error) {
     if (e.message === "PLAN_LIMIT_PROJECTS") return jsonError("Project limit reached for your plan. Upgrade to create more.", 403);
+    if (e.message === "PLAN_LIMIT_COMPONENTS") return jsonError("Saved-component limit reached for your plan. Delete one or upgrade.", 403);
     if (e.message === "PLAN_LIMIT_AI") return jsonError("Monthly AI limit reached for your plan.", 403);
   }
   console.error(e);

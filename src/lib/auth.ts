@@ -46,12 +46,17 @@ export const authOptions: NextAuthOptions = {
         if (fresh) {
           token.role = fresh.role;
           token.plan = fresh.plan;
+        } else {
+          // The user row is gone (deleted account or reset database): invalidate this session.
+          delete token.id;
+          delete token.role;
+          delete token.plan;
         }
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token.id) {
         session.user.id = token.id as string;
         session.user.role = token.role as "USER" | "ADMIN";
         session.user.plan = token.plan as "FREE" | "PRO" | "BUSINESS";

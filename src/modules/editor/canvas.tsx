@@ -8,6 +8,8 @@ import { isLocked } from "@/modules/site/style";
 import { SECTION_META, sectionLabel } from "./defaults";
 import { LAYOUT_PRESETS } from "./layouts";
 import { applyOps } from "./ops";
+import { DRAG_COMPONENT_ID, DRAG_SECTION_TYPE } from "./library-panel";
+import { useLibrary } from "./library-store";
 import { selectActivePage, useEditor } from "./store";
 
 const FRAME_WIDTH = { desktop: 1280, tablet: 768, mobile: 390 } as const;
@@ -64,7 +66,7 @@ function EmptyCanvas() {
     <div className="grid place-items-center px-6 py-24 text-center">
       <div>
         <p className="text-lg font-semibold text-slate-500">Add your first section</p>
-        <p className="mx-auto mt-1 max-w-sm text-sm text-slate-400">Pick a starter layout, click a component in the Components tab, or drag one onto the page.</p>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-slate-400">Pick a starter layout, click a block in the Library tab, or drag one onto the page.</p>
         <div className="mx-auto mt-5 grid max-w-xl gap-3 sm:grid-cols-3">
           {LAYOUT_PRESETS.map((l) => (
             <button key={l.id} type="button" onClick={(e) => { e.stopPropagation(); useEditor.getState().applyLayout(l.id); }} className="rounded-xl border border-slate-300 bg-white/60 p-3 text-left transition hover:border-indigo-400 hover:bg-indigo-50 dark:border-slate-600 dark:bg-slate-900/40 dark:hover:bg-slate-800">
@@ -141,9 +143,11 @@ export function Canvas() {
   const onDropAt = (e: DragEvent, index: number) => {
     e.preventDefault();
     const st = useEditor.getState();
-    const type = e.dataTransfer.getData("application/x-section-type");
+    const type = e.dataTransfer.getData(DRAG_SECTION_TYPE);
     const id = e.dataTransfer.getData("application/x-section-id");
-    if (type && (SECTION_TYPES as readonly string[]).includes(type)) st.addSection(type as SectionType, index);
+    const comp = e.dataTransfer.getData(DRAG_COMPONENT_ID);
+    if (comp) useLibrary.getState().insert(comp, index);
+    else if (type && (SECTION_TYPES as readonly string[]).includes(type)) st.addSection(type as SectionType, index);
     else if (id) st.moveSection(id, index);
     st.setDragging(false);
   };

@@ -4,4 +4,4 @@ import { rmSync } from "node:fs";
 
 rmSync(".test-build", { recursive: true, force: true });
 execFileSync("npx", ["tsc", "-p", "scripts/tsconfig.test.json"], { stdio: "inherit", shell: process.platform === "win32" });
-execFileSync(process.execPath, ["--test", "scripts/style.test.cjs"], { stdio: "inherit" });
+execFileSync(process.execPath, ["--test", "scripts/style.test.cjs", "scripts/code.test.cjs"], { stdio: "inherit" });

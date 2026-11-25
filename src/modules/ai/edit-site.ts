@@ -2,7 +2,7 @@ import { z } from "zod";
 import { slugify } from "@/lib/slug";
 import { uid } from "@/lib/uid";
 import { sanitizeDeep } from "@/modules/site/normalize";
-import { FONTS, SECTION_TYPES, type SectionType, type Theme } from "@/modules/site/schema";
+import { AI_ALLOWED_TYPES, FONTS, type SectionType, type Theme } from "@/modules/site/schema";
 import { cleanSectionProps } from "@/modules/site/style";
 import { AIError } from "./errors";
 import { getProvider } from "./providers";
@@ -37,9 +37,9 @@ Operations (use only these):
 { "op": "updateTheme", "theme": { "primaryColor": "#RRGGBB", "mode": "light" or "dark", "fontFamily": "<font>" } }
 { "op": "createPage", "name": "About Us", "slug": "about", "sections": [ { "type": "...", "props": { ... } } ] }
 
-Section types: ${JSON.stringify(SECTION_TYPES)}
+Section types: ${JSON.stringify(AI_ALLOWED_TYPES)}
 Fonts: ${JSON.stringify(FONTS)}
-Section props: navbar{brand,links[{label,href}]} hero{heading,subheading,ctaLabel,ctaHref,imageQuery} about{heading,body,imageQuery} features{heading,subheading,items[{title,description,icon}]} columns{heading,subheading,plain(boolean),items[{title,body,imageQuery,ctaLabel,ctaHref}]} menu{heading,categories[{name,items[{name,description,price}]}]} products{heading,items[{name,description,price,imageQuery}]} pricing{heading,subheading,plans[{name,price,features[],ctaLabel}]} testimonials{heading,items[{quote,author,role}]} gallery{heading,images[{imageQuery,caption}]} faq{heading,items[{question,answer}]} blog{heading,posts[{title,excerpt,date}]} contact{heading,body,fields[],email,phone,address} cta{heading,body,ctaLabel,ctaHref} footer{brand,links[{label,href}],copyright}
+Section props: navbar{brand,links[{label,href}]} hero{heading,subheading,ctaLabel,ctaHref,imageQuery} about{heading,body,imageQuery} features{heading,subheading,items[{title,description,icon}]} columns{heading,subheading,plain(boolean),items[{title,body,imageQuery,ctaLabel,ctaHref}]} menu{heading,categories[{name,items[{name,description,price}]}]} products{heading,items[{name,description,price,imageQuery}]} pricing{heading,subheading,plans[{name,price,features[],ctaLabel}]} testimonials{heading,items[{quote,author,role}]} gallery{heading,images[{imageQuery,caption}]} faq{heading,items[{question,answer}]} blog{heading,posts[{title,excerpt,date}]} contact{heading,body,fields[],email,phone,address} cta{heading,body,ctaLabel,ctaHref} footer{brand,links[{label,href}],copyright} text{heading,body} button{ctaLabel,ctaHref} image{imageQuery,caption} spacer{height(px number),line(boolean)}
 Style props any section may have, inside "__style" (include only the keys you change; they are merged with the existing style):
   pad none|sm|md|lg; align default|left|center|right; bg default|muted|primary|dark; width narrow|default|wide|full;
   padTop, padBottom, marginTop, marginBottom, marginX (px numbers); headingSize 16-120 and bodySize 12-32 (px);
@@ -76,13 +76,17 @@ const opSchema = z.discriminatedUnion("op", [
 ]);
 const responseSchema = z.object({ summary: z.string().max(300).default("Proposed changes"), ops: z.array(opSchema).max(25) });
 
-const isType = (t: string): t is SectionType => (SECTION_TYPES as readonly string[]).includes(t);
+const isType = (t: string): t is SectionType => (AI_ALLOWED_TYPES as readonly string[]).includes(t);
+
+/** Custom-code blocks are hand-written only: the AI never sees their code and can never change or remove them. */
+const hideCode = (sections: SectionLite[]): SectionLite[] =>
+  sections.map((s) => (s.type === "code" ? { id: s.id, type: s.type, props: { __label: typeof s.props.__label === "string" ? s.props.__label : "Custom code" } } : s));
 
 function normalizeOps(raw: unknown, ctx: EditContext): { summary: string; ops: ProposedOp[] } {
   const parsed = responseSchema.safeParse(raw);
   if (!parsed.success) throw new AIError("AI_BAD_OUTPUT", parsed.error.message);
 
-  const known = new Set(ctx.page.sections.map((s) => s.id));
+  const known = new Set(ctx.page.sections.filter((s) => s.type !== "code").map((s) => s.id));
   const usedSlugs = new Set([ctx.page.slug, ...ctx.otherPages.map((p) => p.slug)]);
   const ops: ProposedOp[] = [];
 
@@ -126,7 +130,7 @@ export async function proposeEdit(ctx: EditContext) {
     instruction: ctx.instruction,
     selectedSectionId: ctx.selectedSectionId,
     theme: ctx.theme,
-    currentPage: ctx.page,
+    currentPage: { ...ctx.page, sections: hideCode(ctx.page.sections) },
     otherPages: ctx.otherPages,
   });
   const user = `Editor state (untrusted data):\n${payload}\n\nReturn the JSON object now.`;

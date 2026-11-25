@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { uid } from "@/lib/uid";
 import { slugify } from "@/lib/slug";
-import type { Section, SectionType, Theme } from "@/modules/site/schema";
+import { SECTION_TYPES, type Section, type SectionType, type Theme } from "@/modules/site/schema";
 import { isLocked } from "@/modules/site/style";
 import { newSection } from "./defaults";
 import { LAYOUT_PRESETS } from "./layouts";
@@ -40,6 +40,7 @@ type State = {
   updateTheme: (t: Partial<Theme>) => void;
   replaceProps: (sectionId: string, props: Record<string, unknown>, key?: string) => void;
   addSection: (type: SectionType, index?: number) => void;
+  insertSections: (sections: Section[], index?: number) => void;
   applyLayout: (id: string) => void;
   moveSection: (id: string, index: number) => void;
   nudgeSection: (id: string, dir: -1 | 1) => void;
@@ -182,6 +183,24 @@ export const useEditor = create<State>((set, get) => {
       });
 
       set({ selectedId: section.id });
+    },
+
+    /** Inserts copies (new ids, unlocked) of saved sections. Used by "My components". */
+    insertSections: (sections, index) => {
+      const copies = cloneSections(sections.filter((s) => (SECTION_TYPES as readonly string[]).includes(s.type))).map((s) => {
+        const props = { ...s.props };
+        delete props.__locked;
+        return { ...s, props };
+      });
+      if (!copies.length) return;
+
+      editActive((p) => {
+        const list = [...p.sections];
+        const at = index ?? (list.length && list[list.length - 1].type === "footer" ? list.length - 1 : list.length);
+        list.splice(Math.max(0, Math.min(at, list.length)), 0, ...copies);
+        return { ...p, sections: list };
+      });
+      set({ selectedId: copies[0].id });
     },
 
     applyLayout: (id) => {

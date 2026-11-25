@@ -4,7 +4,8 @@ import { useState, type DragEvent } from "react";
 import { SECTION_TYPES, type Section, type SectionType } from "@/modules/site/schema";
 import { cleanHide, isLocked } from "@/modules/site/style";
 import { SECTION_META, sectionLabel } from "./defaults";
-import { LAYOUT_PRESETS } from "./layouts";
+import { DRAG_COMPONENT_ID, DRAG_SECTION_TYPE } from "./library-panel";
+import { useLibrary } from "./library-store";
 import { selectActivePage, useEditor } from "./store";
 
 /* ---------------- Pages ---------------- */
@@ -136,8 +137,10 @@ export function LayersPanel() {
     e.preventDefault();
     setOverIndex(null);
     const id = e.dataTransfer.getData("application/x-section-id");
-    const type = e.dataTransfer.getData("application/x-section-type");
-    if (id) st().moveSection(id, index);
+    const type = e.dataTransfer.getData(DRAG_SECTION_TYPE);
+    const comp = e.dataTransfer.getData(DRAG_COMPONENT_ID);
+    if (comp) useLibrary.getState().insert(comp, index);
+    else if (id) st().moveSection(id, index);
     else if (type && (SECTION_TYPES as readonly string[]).includes(type)) st().addSection(type as SectionType, index);
     st().setDragging(false);
   };
@@ -145,55 +148,11 @@ export function LayersPanel() {
   if (!page) return null;
   return (
     <div className="grid gap-1 p-3">
-      {page.sections.length === 0 && <p className="text-sm text-slate-500">No sections yet. Add one from the Components tab.</p>}
+      {page.sections.length === 0 && <p className="text-sm text-slate-500">No sections yet. Add one from the Library tab.</p>}
       {page.sections.map((s, i) => (
         <LayerRow key={s.id} s={s} i={i} selected={selectedId === s.id} over={overIndex === i} setOver={setOverIndex} drop={drop} />
       ))}
       <div className="h-6" onDragOver={(e) => { e.preventDefault(); setOverIndex(page.sections.length); }} onDrop={(e) => drop(e, page.sections.length)} />
-    </div>
-  );
-}
-
-/* ---------------- Components ---------------- */
-export function ComponentsPanel() {
-  const st = useEditor.getState;
-  const empty = useEditor((s) => selectActivePage(s).sections.length === 0);
-  return (
-    <div className="grid gap-4 p-3">
-      {empty && (
-        <div className="grid gap-2">
-          <h3 className="panel-title">Starter layouts</h3>
-          {LAYOUT_PRESETS.map((l) => (
-            <button key={l.id} type="button" onClick={() => st().applyLayout(l.id)} className="rounded-xl border border-slate-200 px-3 py-2 text-left transition hover:border-indigo-400 hover:bg-indigo-50 dark:border-slate-700 dark:hover:bg-slate-800">
-              <span className="block text-sm font-medium">{l.label}</span>
-              <span className="block text-xs text-slate-500">{l.description}</span>
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="grid gap-2">
-        {empty && <h3 className="panel-title">Sections</h3>}
-        <div className="grid grid-cols-2 gap-2">
-          {SECTION_TYPES.map((t) => {
-            const meta = SECTION_META[t];
-            const Icon = meta.icon;
-            return (
-              <button
-                key={t}
-                draggable
-                onDragStart={(e) => { e.dataTransfer.setData("application/x-section-type", t); e.dataTransfer.effectAllowed = "copy"; st().setDragging(true); }}
-                onDragEnd={() => st().setDragging(false)}
-                onClick={() => st().addSection(t)}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-3 text-xs font-medium text-slate-700 transition hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-                title="Click to add, or drag onto the canvas"
-              >
-                <Icon size={18} />
-                {meta.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

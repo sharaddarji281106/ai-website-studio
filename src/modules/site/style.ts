@@ -235,10 +235,13 @@ export function cleanSectionProps(props: Record<string, unknown>, opts: { allowI
 /* ---------------- responsive values (used by the property panel) ---------------- */
 
 const PAD_PX = { none: 0, sm: 32, md: 64, lg: 104 } as const;
+/** Basic blocks are tight by default (keep in sync with ".st-basic" rules in site.css). */
+export const COMPACT_PAD_PX = { text: 32, image: 32, button: 24, spacer: 0, code: 0 } as const;
 
 /** The spacing the stylesheet gives a section for a preset, in px. */
 export function presetPadPx(type: SectionType, pad: SectionStyle["pad"]): number {
   const p = pad ?? "md";
+  if (p === "md" && type in COMPACT_PAD_PX) return COMPACT_PAD_PX[type as keyof typeof COMPACT_PAD_PX];
   if (p === "md" && type === "navbar") return 16;
   if (p === "md" && type === "footer") return 40;
   return PAD_PX[p];

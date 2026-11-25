@@ -41,6 +41,7 @@ export default async function StudioPage({
       status={project.status}
       subdomain={project.subdomain}
       initialPanel={typeof panel === "string" ? panel : undefined}
+      manualMode={project.category === "blank"}
     />
   );
 }

@@ -4,7 +4,8 @@
 import { FileText, Layers, LayoutGrid, Paintbrush, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Canvas } from "./canvas";
-import { ComponentsPanel, LayersPanel, PagesPanel } from "./left-panels";
+import { LayersPanel, PagesPanel } from "./left-panels";
+import { ComponentsPanel } from "./library-panel";
 import { AiPanel, ContentPanel } from "./right-panels";
 import { StylePanel } from "./style-panel";
 import { useEditor } from "./store";
@@ -14,7 +15,7 @@ import type { Doc } from "./types";
 const LEFT = [
   { id: "pages", label: "Pages", icon: FileText },
   { id: "layers", label: "Layers", icon: Layers },
-  { id: "components", label: "Components", icon: LayoutGrid },
+  { id: "components", label: "Library", icon: LayoutGrid },
 ] as const;
 
 const RIGHT = [
@@ -73,17 +74,20 @@ export function EditorShell({
   status,
   subdomain,
   initialPanel,
+  manualMode = false,
 }: {
   projectId: string;
   initialDoc: Doc;
   status: "DRAFT" | "PUBLISHED";
   subdomain: string | null;
   initialPanel?: string;
+  /** Manual Build Mode (a blank project): the library is open by default. */
+  manualMode?: boolean;
 }) {
   const initializedProjectId = useEditor((s) => s.projectId);
   // A blank project (Manual Build Mode) opens with the component library; ?panel= overrides the default.
   const startsEmpty = initialDoc.pages.length > 0 && initialDoc.pages.every((p) => p.sections.length === 0);
-  const [left, setLeft] = useState<LeftId>(() => (isLeft(initialPanel) ? initialPanel : startsEmpty ? "components" : "layers"));
+  const [left, setLeft] = useState<LeftId>(() => (isLeft(initialPanel) ? initialPanel : manualMode || startsEmpty ? "components" : "layers"));
   const [right, setRight] = useState<RightId>(() => (isRight(initialPanel) ? initialPanel : "content"));
   // On screens narrower than "lg" the side panels become slide-in drawers.
   const [drawer, setDrawer] = useState<"left" | "right" | null>(null);

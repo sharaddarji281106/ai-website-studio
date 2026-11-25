@@ -35,13 +35,14 @@ export function applyOps(doc: Doc, pageId: string, ops: EditOp[]): Doc {
       case "updateProps":
         d = mapPage(d, pageId, (p) => ({
           ...p,
-          sections: p.sections.map((s) => (s.id === op.sectionId && !isLocked(s.props) ? { ...s, props: mergeProps(s.props, op.props) } : s)),
+          sections: p.sections.map((s) => (s.id === op.sectionId && s.type !== "code" && !isLocked(s.props) ? { ...s, props: mergeProps(s.props, op.props) } : s)),
         }));
         break;
       case "removeSection":
-        d = mapPage(d, pageId, (p) => ({ ...p, sections: p.sections.filter((s) => s.id !== op.sectionId || isLocked(s.props)) }));
+        d = mapPage(d, pageId, (p) => ({ ...p, sections: p.sections.filter((s) => s.id !== op.sectionId || s.type === "code" || isLocked(s.props)) }));
         break;
       case "addSection":
+        if (op.section.type === "code") break;
         d = mapPage(d, pageId, (p) => {
           const list = [...p.sections];
           let at = list.length;

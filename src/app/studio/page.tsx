@@ -1,10 +1,9 @@
 import { FileText, LayoutGrid, LayoutTemplate, Layers, Paintbrush, Pencil, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
 import { AppHeader } from "@/components/app-header";
-import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getValidSession } from "@/lib/session";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { StartBlankButton } from "@/modules/projects/start-blank-button";
 
@@ -13,13 +12,13 @@ export const dynamic = "force-dynamic";
 const SECTION_LINKS = [
   { panel: "layers", label: "Editor", icon: Layers },
   { panel: "pages", label: "Pages", icon: FileText },
-  { panel: "components", label: "Components", icon: LayoutGrid },
+  { panel: "components", label: "Library", icon: LayoutGrid },
   { panel: "style", label: "Style", icon: Paintbrush },
   { panel: "ai", label: "AI", icon: Sparkles },
 ] as const;
 
 export default async function StudioHomePage() {
-  const session = await getServerSession(authOptions);
+  const session = await getValidSession();
   if (!session) redirect("/login?callbackUrl=/studio");
 
   const userId = session.user.id;

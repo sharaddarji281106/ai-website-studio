@@ -6,7 +6,15 @@ export type { FontName };
 export const SECTION_TYPES = [
   "navbar", "hero", "about", "features", "columns", "menu", "products", "pricing",
   "testimonials", "gallery", "faq", "blog", "contact", "cta", "footer",
+  // Phase E: basic blocks and the sandboxed custom-code block
+  "text", "button", "image", "spacer", "code",
 ] as const;
+
+/** Blocks the AI may never create, edit, or read (the user writes code by hand; the AI never runs or writes code). */
+export const AI_BLOCKED_TYPES = ["code"] as const;
+export const AI_ALLOWED_TYPES = SECTION_TYPES.filter((t) => !(AI_BLOCKED_TYPES as readonly string[]).includes(t));
+/** Types the site generator is told about (it is not told about the hand-built blocks). */
+export const AI_GENERATE_TYPES = SECTION_TYPES.filter((t) => !["columns", "text", "button", "image", "spacer", "code"].includes(t));
 export const CATEGORIES = [
   "business", "portfolio", "ecommerce", "restaurant", "education", "blog",
   "landing", "agency", "personal", "saas", "realestate",

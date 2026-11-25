@@ -1,5 +1,5 @@
 import { normalizeSpec } from "@/modules/site/normalize";
-import { CATEGORIES, FONTS, SECTION_TYPES, type SiteSpec } from "@/modules/site/schema";
+import { AI_GENERATE_TYPES, CATEGORIES, FONTS, type SiteSpec } from "@/modules/site/schema";
 import { AIError } from "./errors";
 import { getProvider } from "./providers";
 
@@ -10,7 +10,7 @@ JSON shape:
   "siteName": "string",
   "category": one of ${JSON.stringify(CATEGORIES)},
   "theme": { "primaryColor": "#RRGGBB", "mode": "light" or "dark", "fontFamily": one of ${JSON.stringify(FONTS)} },
-  "pages": [ { "name": "Home", "slug": "home", "sections": [ { "type": one of ${JSON.stringify(SECTION_TYPES.filter((t) => t !== "columns"))}, "props": { } } ] } ]
+  "pages": [ { "name": "Home", "slug": "home", "sections": [ { "type": one of ${JSON.stringify(AI_GENERATE_TYPES)}, "props": { } } ] } ]
 }
 
 Rules:

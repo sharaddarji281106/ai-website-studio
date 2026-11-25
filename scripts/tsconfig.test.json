@@ -9,5 +9,5 @@
     "outDir": "../.test-build",
     "rootDir": "../src"
   },
-  "include": ["../src/modules/site/style.ts", "../src/modules/site/fonts.ts", "../next-env.d.ts"]
+  "include": ["../src/modules/site/style.ts", "../src/modules/site/fonts.ts", "../src/modules/site/code.ts", "../src/modules/site/sanitize.ts", "../src/modules/site/sanitize-section.ts", "../next-env.d.ts"]
 }

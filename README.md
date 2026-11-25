@@ -24,6 +24,8 @@ Copy `.env.example` to `.env` (keep your existing DATABASE_URL and NEXTAUTH_SECR
 - Per-page URL and SEO title/description
 - Publish/unpublish to /s/<subdomain>, owner-only preview, static HTML export (.zip)
 
+- Phase E: component library with categories and search, My components (save as component), basic blocks, sandboxed custom code block with Monaco (see PHASE_E.md)
+
 ## Not built yet
-Email verification and password reset, Monaco code editor, version history and rollback, templates marketplace,
+Email verification and password reset, version history and rollback, templates marketplace,
 Stripe billing, e-commerce, analytics, admin dashboard, custom domains, real contact-form delivery.

@@ -1,9 +1,14 @@
 import {
   BadgeDollarSign, Columns3, ImageIcon, Info, LayoutGrid, LayoutTemplate, Mail, MessageCircleQuestion,
-  MousePointerClick, Newspaper, PanelBottom, PanelTop, Quote, ShoppingBag, UtensilsCrossed, type LucideIcon,
+  MousePointerClick, Newspaper, PanelBottom, PanelTop, Quote, ShoppingBag, SeparatorHorizontal, SquareCode, Type, UtensilsCrossed, type LucideIcon,
 } from "lucide-react";
 import { uid } from "@/lib/uid";
+import { DEFAULT_CODE } from "@/modules/site/code";
 import type { Section, SectionType } from "@/modules/site/schema";
+
+/** Library groups, in the order they are shown. */
+export const LIBRARY_CATEGORIES = ["Basic", "Navigation", "Hero & content", "Social proof", "Conversion", "Commerce", "Advanced"] as const;
+export type LibraryCategory = (typeof LIBRARY_CATEGORIES)[number];
 
 export const SECTION_META: Record<SectionType, { label: string; icon: LucideIcon }> = {
   navbar: { label: "Navigation", icon: PanelTop },
@@ -21,6 +26,21 @@ export const SECTION_META: Record<SectionType, { label: string; icon: LucideIcon
   contact: { label: "Contact", icon: Mail },
   cta: { label: "Call to action", icon: MousePointerClick },
   footer: { label: "Footer", icon: PanelBottom },
+  text: { label: "Text", icon: Type },
+  button: { label: "Button", icon: MousePointerClick },
+  image: { label: "Image", icon: ImageIcon },
+  spacer: { label: "Spacer / divider", icon: SeparatorHorizontal },
+  code: { label: "Custom code", icon: SquareCode },
+};
+
+export const SECTION_CATEGORY: Record<SectionType, LibraryCategory> = {
+  text: "Basic", button: "Basic", image: "Basic", spacer: "Basic",
+  navbar: "Navigation", footer: "Navigation",
+  hero: "Hero & content", about: "Hero & content", features: "Hero & content", columns: "Hero & content", faq: "Hero & content", gallery: "Hero & content", blog: "Hero & content",
+  testimonials: "Social proof",
+  pricing: "Conversion", cta: "Conversion", contact: "Conversion",
+  menu: "Commerce", products: "Commerce",
+  code: "Advanced",
 };
 
 export const SECTION_DEFAULTS: Record<SectionType, Record<string, unknown>> = {
@@ -39,6 +59,11 @@ export const SECTION_DEFAULTS: Record<SectionType, Record<string, unknown>> = {
   contact: { heading: "Get in touch", body: "We usually reply within one business day.", fields: ["Name", "Email", "Message"], email: "hello@example.com", phone: "+1 555 0100", address: "123 Main Street" },
   cta: { heading: "Ready to get started?", body: "Join today and see the difference.", ctaLabel: "Get started", ctaHref: "#" },
   footer: { brand: "Your Brand", links: [{ label: "Privacy", href: "#" }, { label: "Terms", href: "#" }], copyright: "© 2026 Your Brand. All rights reserved." },
+  text: { heading: "A heading", body: "Write your text here. Leave a blank line to start a new paragraph." },
+  button: { ctaLabel: "Click me", ctaHref: "#" },
+  image: { imageQuery: "Describe the image", image: "", caption: "" },
+  spacer: { height: 48, line: false },
+  code: { ...DEFAULT_CODE },
 };
 
 /** The name shown in Layers and on the canvas: the user's own label, or the block type. */

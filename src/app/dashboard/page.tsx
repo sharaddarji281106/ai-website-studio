@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
 import { AppHeader } from "@/components/app-header";
-import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getValidSession } from "@/lib/session";
 import { PLAN_LIMITS } from "@/lib/plans";
 import { NewWebsiteForm } from "@/modules/projects/new-website-form";
 import { ProjectGrid, type ProjectItem } from "@/modules/projects/project-grid";
@@ -43,7 +42,7 @@ function UsageRow({ label, used, limit }: { label: string; used: number; limit: 
 }
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getValidSession();
   if (!session) redirect("/login");
 
   const userId = session.user.id;

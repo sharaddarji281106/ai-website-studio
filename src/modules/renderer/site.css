@@ -216,3 +216,19 @@
 .st-sec.s-ca-start .st-grid { align-items: start; }
 .st-sec.s-ca-center .st-grid { align-items: center; }
 .st-sec.s-ca-end .st-grid { align-items: end; }
+
+/* ===== Phase E: basic blocks (text, button, image, spacer) and the sandboxed custom-code block =====
+   Tight default spacing (keep in sync with COMPACT_PAD_PX in site/style.ts). */
+.st-basic.st-pad-md { padding-block: 2rem; }
+.st-button-block.st-pad-md { padding-block: 1.5rem; }
+.st-spacer.st-pad-md, .st-code.st-pad-md { padding-block: 0; }
+.st-narrow-col { max-width: 48rem; }
+.st-align-center .st-narrow-col { margin-inline: auto; }
+.st-text h2 + .st-body { margin-top: .75rem; }
+.st-text .st-body + .st-body { margin-top: .85rem; }
+.st-image-block figure { display: grid; gap: .6rem; margin: 0; }
+.st-image-block .st-image-media { aspect-ratio: 16 / 9; }
+.st-line { width: 100%; border: 0; border-top: 1px solid var(--border); margin: 0; }
+.st-code iframe { max-width: 100%; }
+/* In the editor the canvas must receive clicks (to select the block); live and exported sites stay fully interactive. */
+.site-root:not([data-live]) .st-code iframe { pointer-events: none; }

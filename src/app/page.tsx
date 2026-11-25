@@ -1,9 +1,8 @@
 import { ArrowRight, Check, Cpu, Download, Globe, LayoutTemplate, Layers, MousePointerClick, Rocket, ShieldCheck, Smartphone, Sparkles, Pencil } from "lucide-react";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { authOptions } from "@/lib/auth";
+import { getValidSession } from "@/lib/session";
 
 const STEPS = [
   { icon: Sparkles, title: "Describe it", text: "Tell the AI what you need in plain English. No code, no design skills." },
@@ -73,7 +72,7 @@ function HeroMock() {
 }
 
 export default async function Home() {
-  const session = await getServerSession(authOptions);
+  const session = await getValidSession();
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur dark:border-slate-800/70 dark:bg-slate-950/80">

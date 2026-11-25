@@ -5,9 +5,8 @@ import { db } from "@/lib/db";
 import { jsonError } from "@/lib/api";
 import { slugify } from "@/lib/slug";
 import { getSessionUser } from "@/lib/session";
-import { sanitizeDeep } from "@/modules/site/normalize";
+import { sanitizeSectionProps } from "@/modules/site/sanitize-section";
 import { FONTS, SECTION_TYPES } from "@/modules/site/schema";
-import { cleanSectionProps } from "@/modules/site/style";
 
 const MAX_PAGES = 30;
 
@@ -75,7 +74,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     seo: p.seo as Prisma.InputJsonValue,
     content: {
       // styles are validated again here, so only well-formed values can ever be stored
-      sections: p.sections.map((s) => ({ ...s, props: cleanSectionProps(sanitizeDeep(s.props) as Record<string, unknown>) })),
+      sections: p.sections.map((s) => ({ ...s, props: sanitizeSectionProps(s.type, s.props) })),
     } as unknown as Prisma.InputJsonValue,
   });
 

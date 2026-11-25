@@ -1,6 +1,8 @@
 "use client";
-import { Check, Loader2, Send, Sparkles, X } from "lucide-react";
+import { Check, Loader2, Send, SquareCode, Sparkles, X } from "lucide-react";
 import { useState } from "react";
+import { CodeEditorModal } from "./code-editor";
+import { SaveAsComponent } from "./library-panel";
 import { SECTION_DEFAULTS, SECTION_META, withDefaults } from "./defaults";
 import { isLocked } from "@/modules/site/style";
 import { describeOp } from "./ops";
@@ -11,6 +13,26 @@ function useSelectedSection() {
   const page = useEditor(selectActivePage);
   const selectedId = useEditor((s) => s.selectedId);
   return page?.sections.find((s) => s.id === selectedId) ?? null;
+}
+
+/* ---------------- Custom code block ---------------- */
+function CodeContent({ id, height, locked }: { id: string; height: unknown; locked: boolean }) {
+  const [open, setOpen] = useState(false);
+  const h = typeof height === "number" ? height : 320;
+  return (
+    <fieldset disabled={locked} className="grid min-w-0 gap-3 disabled:opacity-60">
+      <button type="button" className="btn-primary gap-2" onClick={() => setOpen(true)}><SquareCode size={15} /> Open code editor</button>
+      <label className="grid gap-1"><span className="field-label">Height (px)</span>
+        <input type="number" className="input" min={80} max={1600} value={h}
+          onChange={(e) => {
+            const cur = selectActivePage(useEditor.getState()).sections.find((x) => x.id === id);
+            if (cur) useEditor.getState().replaceProps(id, { ...cur.props, height: Number(e.target.value) }, "height");
+          }} />
+      </label>
+      <p className="text-xs text-slate-500">Your HTML, CSS and JavaScript run inside a sandboxed frame. They cannot read your account, cookies or the rest of the page, and cannot send data out. The AI never sees or edits this block.</p>
+      {open && <CodeEditorModal sectionId={id} onClose={() => setOpen(false)} />}
+    </fieldset>
+  );
 }
 
 /* ---------------- Content ---------------- */
@@ -34,6 +56,10 @@ export function ContentPanel() {
           This section is locked. Unlock it in the Layers tab to change it.
         </p>
       )}
+      <SaveAsComponent />
+      {section.type === "code" ? (
+        <CodeContent id={section.id} height={section.props.height} locked={isLocked(section.props)} />
+      ) : (
       <fieldset disabled={isLocked(section.props)} className="min-w-0 disabled:opacity-60">
         <PropsEditor
           value={merged}
@@ -41,6 +67,7 @@ export function ContentPanel() {
           onChange={(props, key) => useEditor.getState().replaceProps(section.id, props, key)}
         />
       </fieldset>
+      )}
     </div>
   );
 }
@@ -73,7 +100,7 @@ export function AiPanel() {
           instruction,
           selectedSectionId: st.selectedId,
           theme: st.doc.theme,
-          page: { name: page.name, slug: page.slug, sections: page.sections },
+          page: { name: page.name, slug: page.slug, sections: page.sections.map((s) => (s.type === "code" ? { id: s.id, type: s.type, props: {} } : s)) },
           otherPages: st.doc.pages.filter((p) => p.id !== page.id).map((p) => ({ name: p.name, slug: p.slug })),
         }),
       });

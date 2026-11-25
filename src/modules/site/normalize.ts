@@ -1,27 +1,11 @@
 import { randomUUID } from "crypto";
 import { slugify } from "@/lib/slug";
 import { AIError } from "@/modules/ai/errors";
-import { CATEGORIES, FONTS, SECTION_TYPES, rawSpecSchema, type SiteSpec } from "./schema";
+import { AI_ALLOWED_TYPES, CATEGORIES, FONTS, rawSpecSchema, type SiteSpec } from "./schema";
+import { sanitizeDeep } from "./sanitize";
 import { cleanSectionProps } from "./style";
 
-/** Strip markup and dangerous URL schemes from AI output; cap sizes. */
-export function sanitizeDeep(v: unknown, depth = 0): unknown {
-  if (depth > 8) return null;
-  if (typeof v === "string") {
-    const s = v.replace(/[<>]/g, "").slice(0, 2000);
-    return /^\s*(javascript|data|vbscript):/i.test(s) ? "" : s;
-  }
-  if (typeof v === "number" || typeof v === "boolean" || v === null) return v;
-  if (Array.isArray(v)) return v.slice(0, 50).map((x) => sanitizeDeep(x, depth + 1));
-  if (v && typeof v === "object") {
-    return Object.fromEntries(
-      Object.entries(v as Record<string, unknown>)
-        .slice(0, 60)
-        .map(([k, val]) => [k.slice(0, 60), sanitizeDeep(val, depth + 1)]),
-    );
-  }
-  return null;
-}
+export { sanitizeDeep } from "./sanitize";
 
 export function normalizeSpec(raw: unknown): SiteSpec {
   const parsed = rawSpecSchema.safeParse(raw);
@@ -32,10 +16,10 @@ export function normalizeSpec(raw: unknown): SiteSpec {
   const pages = s.pages
     .map((p) => {
       const sections = p.sections
-        .filter((sec) => (SECTION_TYPES as readonly string[]).includes(sec.type))
+        .filter((sec) => (AI_ALLOWED_TYPES as readonly string[]).includes(sec.type))
         .map((sec) => ({
           id: randomUUID(),
-          type: sec.type as (typeof SECTION_TYPES)[number],
+          type: sec.type as (typeof AI_ALLOWED_TYPES)[number],
           props: cleanSectionProps(sanitizeDeep(sec.props) as Record<string, unknown>, { allowImage: false }),
         }));
       let slug = slugify(p.slug || p.name);

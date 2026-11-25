@@ -4,11 +4,11 @@ import { db } from "@/lib/db";
 /** Single source of truth for plan limits. Enforced on the SERVER only. */
 export const PLAN_LIMITS: Record<
   Plan,
-  { aiGenerationsPerMonth: number; aiEditsPerMonth: number; maxProjects: number; customDomain: boolean; codeExport: boolean }
+  { aiGenerationsPerMonth: number; aiEditsPerMonth: number; maxProjects: number; maxSavedComponents: number; customDomain: boolean; codeExport: boolean }
 > = {
-  FREE: { aiGenerationsPerMonth: 3, aiEditsPerMonth: 20, maxProjects: 1, customDomain: false, codeExport: false },
-  PRO: { aiGenerationsPerMonth: 50, aiEditsPerMonth: 500, maxProjects: 10, customDomain: true, codeExport: true },
-  BUSINESS: { aiGenerationsPerMonth: 300, aiEditsPerMonth: 3000, maxProjects: 100, customDomain: true, codeExport: true },
+  FREE: { aiGenerationsPerMonth: 3, aiEditsPerMonth: 20, maxProjects: 1, maxSavedComponents: 5, customDomain: false, codeExport: false },
+  PRO: { aiGenerationsPerMonth: 50, aiEditsPerMonth: 500, maxProjects: 10, maxSavedComponents: 50, customDomain: true, codeExport: true },
+  BUSINESS: { aiGenerationsPerMonth: 300, aiEditsPerMonth: 3000, maxProjects: 100, maxSavedComponents: 500, customDomain: true, codeExport: true },
 };
 
 export async function assertCanCreateProject(userId: string, plan: Plan) {
@@ -16,6 +16,11 @@ export async function assertCanCreateProject(userId: string, plan: Plan) {
   if (count >= PLAN_LIMITS[plan].maxProjects) {
     throw new Error("PLAN_LIMIT_PROJECTS");
   }
+}
+
+export async function assertCanSaveComponent(userId: string, plan: Plan) {
+  const count = await db.savedComponent.count({ where: { userId } });
+  if (count >= PLAN_LIMITS[plan].maxSavedComponents) throw new Error("PLAN_LIMIT_COMPONENTS");
 }
 
 export async function assertAiQuota(userId: string, plan: Plan, kind: "ai_generation" | "ai_edit") {
